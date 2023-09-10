@@ -2,7 +2,9 @@ from collections import Counter
 import pandas as pd
 from urlextract import URLExtract
 from wordcloud import WordCloud
+
 extract = URLExtract()
+from textblob import TextBlob  # Import TextBlob for sentiment analysis
 
 
 def fetch_stats(selected_user, df):
@@ -28,7 +30,7 @@ def fetch_stats(selected_user, df):
 def most_busy_users(df):
     x = df['user'].value_counts().head()
     df_percent = round((df['user'].value_counts() / df.shape[0]) * 100, 2).reset_index().rename(
-         columns={'index': 'percentage', 'user': 'Name'})
+        columns={'index': 'percentage', 'user': 'Name'})
     return x, df_percent
 
 
@@ -79,7 +81,6 @@ def most_common_words(selected_user, df):
 
 
 def monthly_timeline(selected_user, df):
-
     if selected_user != 'Overall':
         df = df[df['user'] == selected_user]
 
@@ -95,7 +96,6 @@ def monthly_timeline(selected_user, df):
 
 
 def daily_timeline(selected_user, df):
-
     if selected_user != 'Overall':
         df = df[df['user'] == selected_user]
 
@@ -105,7 +105,6 @@ def daily_timeline(selected_user, df):
 
 
 def week_activity_map(selected_user, df):
-
     if selected_user != 'Overall':
         df = df[df['user'] == selected_user]
 
@@ -113,7 +112,6 @@ def week_activity_map(selected_user, df):
 
 
 def month_activity_map(selected_user, df):
-
     if selected_user != 'Overall':
         df = df[df['user'] == selected_user]
 
@@ -121,11 +119,20 @@ def month_activity_map(selected_user, df):
 
 
 def activity_heatmap(selected_user, df):
-
     if selected_user != 'Overall':
         df = df[df['user'] == selected_user]
 
     user_heatmap = df.pivot_table(index='day_name', columns='period', values='message', aggfunc='count').fillna(0)
 
     return user_heatmap
+
+
+# Additional function for Sentiment Analysis
+def analyze_sentiment(messages):
+    sentiment_scores = []
+    for message in messages:
+        sentiment = TextBlob(message).sentiment.polarity
+        sentiment_scores.append(sentiment)
+    return sentiment_scores
+
 
