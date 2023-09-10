@@ -1,5 +1,6 @@
 import re
 import pandas as pd
+import numpy as np  # Import NumPy for array operations
 
 
 def preprocess(data):
