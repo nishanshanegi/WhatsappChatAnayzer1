@@ -1,28 +1,28 @@
-import streamlit as st
-import preprocessor
-import helper
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
+import streamlit as st
+from textblob import TextBlob
+import helper
+import preprocessor
+
+
+def categorize_sentiment(score):
+    if score > 0:
+        return 'Positive'
+    elif score == 0:
+        return 'Neutral'
+    else:
+        return 'Negative'
 
 
 st.sidebar.title("WhatsApp Chat Analyzer")
-
 uploaded_file = st.sidebar.file_uploader("Choose a file")
 if uploaded_file is not None:
     bytes_data = uploaded_file.getvalue()
-    # convert into string
     data = bytes_data.decode("utf-8")
-
-    # Debugging: Display loaded data
-    # data will show on app
-
-    # want dataframe so..
     df = preprocessor.preprocess(data)
 
-    # Debugging: Display intermediate results
-    st.text("Processed Data:")
-
-    # fetch unique user
     user_list = df['user'].unique().tolist()
     user_list.remove('group_notification')
     user_list.sort()
@@ -31,9 +31,6 @@ if uploaded_file is not None:
     selected_user = st.sidebar.selectbox("Show analysis wrt", user_list)
 
     if st.sidebar.button("Show analysis"):
-
-        # Stats Area
-
         num_messages, words, num_media_messages, num_links = helper.fetch_stats(selected_user, df)
         st.title("Top Statistics")
         col1, col2, col3, col4 = st.columns(4)
@@ -50,6 +47,33 @@ if uploaded_file is not None:
         with col4:
             st.header("Total Links Shared")
             st.title(num_links)
+
+        # Sentiment Analysis Section
+        st.title("Sentiment Analysis")
+        df['sentiment'] = df['message'].apply(lambda message: TextBlob(message).sentiment.polarity)
+        df['sentiment_label'] = df['sentiment'].apply(categorize_sentiment)
+        df = df[df['user'] != 'group_notification']  # Exclude group_notification user from sentiment analysis
+
+        st.write("Overall Sentiment Distribution:")
+        sns.set(style="ticks")
+        plt.figure(figsize=(8, 6))
+        sns.countplot(x='sentiment_label', data=df, palette="Set2")
+        plt.xlabel("Sentiment")
+        plt.ylabel("Count")
+        plt.title("Sentiment Analysis")
+        st.pyplot(plt)
+
+        st.write("Sentiment Analysis by User:")
+        user_sentiment = df.groupby('user')['sentiment'].mean().reset_index()
+        st.bar_chart(user_sentiment.set_index('user'))
+
+        # Sentiment Trends
+        st.title("Sentiment Trends")
+        sentiment_trends = df.groupby(df['only_date'])['sentiment'].mean()
+        fig, ax = plt.subplots()
+        ax.plot(sentiment_trends.index, sentiment_trends.values, color='blue')
+        plt.xticks(rotation='vertical')
+        st.pyplot(fig)
 
     # monthly timeline
     st.title("Monthly Timeline")
@@ -126,5 +150,3 @@ if uploaded_file is not None:
     plt.tight_layout()  # Ensures the labels fit within the figure area
 
     st.pyplot(fig)
-
-
